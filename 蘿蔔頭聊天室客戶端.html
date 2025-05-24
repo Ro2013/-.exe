@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>蘿蔔頭一對一聊天室</title>
+</head>
+<body>
+    <h2>蘿蔔頭一對一聊天室</h2>
+    暱稱：<input type="text" id="nickname" />
+    <button onclick="connect()">登入</button><br><br>
+
+    傳給：<input type="text" id="to" placeholder="對方暱稱" />
+    <input type="text" id="message" placeholder="輸入訊息..." onkeydown="if(event.key==='Enter') sendMessage()" />
+    <button onclick="sendMessage()">送出</button>
+
+    <div id="chat" style="border:1px solid #000; height:300px; overflow:auto; margin-top:10px;"></div>
+
+    <script>
+        let socket;
+
+        function connect() {
+            const nickname = document.getElementById("nickname").value;
+            socket = new WebSocket("wss://luo-bo-tou-liao-tian-shi.onrender.com");
+
+            socket.onopen = () => {
+                socket.send(JSON.stringify({nickname: nickname}));
+            };
+
+            socket.onmessage = (event) => {
+                const chat = document.getElementById("chat");
+                chat.innerHTML += event.data + "<br>";
+                chat.scrollTop = chat.scrollHeight;
+            };
+        }
+
+        function sendMessage() {
+            const message = document.getElementById("message").value;
+            const to = document.getElementById("to").value;
+            socket.send(JSON.stringify({to: to, message: message}));
+            document.getElementById("message").value = "";
+        }
+    </script>
+</body>
+</html>
