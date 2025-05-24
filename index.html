@@ -1,45 +1,75 @@
-
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>蘿蔔頭一對一聊天室</title>
+  <meta charset="UTF-8" />
+  <title>蘿蔔頭聊天室客戶端</title>
 </head>
 <body>
-    <h2>蘿蔔頭一對一聊天室</h2>
-    暱稱：<input type="text" id="nickname" />
-    <button onclick="connect()">登入</button><br><br>
+  <h2>蘿蔔頭聊天室註冊 / 連線</h2>
+  <form id="registerForm">
+    <input type="text" id="nickname" placeholder="輸入暱稱" required />
+    <input type="text" id="serverIp" placeholder="輸入伺服器 IP" required />
+    <button type="submit">註冊並連線</button>
+  </form>
 
-    傳給：<input type="text" id="to" placeholder="對方暱稱" />
-    <input type="text" id="message" placeholder="輸入訊息..." onkeydown="if(event.key==='Enter') sendMessage()" />
-    <button onclick="sendMessage()">送出</button>
+  <div id="chatArea" style="display:none;">
+    <div id="messages" style="border:1px solid #ccc; height:300px; overflow:auto;"></div>
+    <input type="text" id="msgInput" placeholder="輸入訊息" />
+    <button id="sendBtn">發送</button>
+  </div>
 
-    <div id="chat" style="border:1px solid #000; height:300px; overflow:auto; margin-top:10px;"></div>
+  <script>
+    let ws;
 
-    <script>
-        let socket;
+    document.getElementById('registerForm').onsubmit = function(e) {
+      e.preventDefault();
 
-        function connect() {
-            const nickname = document.getElementById("nickname").value;
-            socket = new WebSocket("wss://luo-bo-tou-liao-tian-shi.onrender.com");
+      const nickname = document.getElementById('nickname').value.trim();
+      const serverIp = document.getElementById('serverIp').value.trim();
 
-            socket.onopen = () => {
-                socket.send(JSON.stringify({nickname: nickname}));
-            };
+      if (!nickname || !serverIp) {
+        alert('請輸入暱稱與伺服器 IP');
+        return;
+      }
 
-            socket.onmessage = (event) => {
-                const chat = document.getElementById("chat");
-                chat.innerHTML += event.data + "<br>";
-                chat.scrollTop = chat.scrollHeight;
-            };
+      // 建立 WebSocket 連線
+      ws = new WebSocket(`ws://${serverIp}`);
+
+      ws.onopen = function() {
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('chatArea').style.display = 'block';
+
+        // 連線成功後傳送暱稱給伺服器
+        ws.send(JSON.stringify({ type: 'register', nickname: nickname }));
+      };
+
+      ws.onmessage = function(event) {
+        const messages = document.getElementById('messages');
+        const data = JSON.parse(event.data);
+
+        if(data.type === 'message') {
+          messages.innerHTML += `<div><b>${data.from}:</b> ${data.text}</div>`;
+          messages.scrollTop = messages.scrollHeight;
         }
+      };
 
-        function sendMessage() {
-            const message = document.getElementById("message").value;
-            const to = document.getElementById("to").value;
-            socket.send(JSON.stringify({to: to, message: message}));
-            document.getElementById("message").value = "";
-        }
-    </script>
+      ws.onerror = function() {
+        alert('無法連線到伺服器');
+      };
+
+      ws.onclose = function() {
+        alert('連線已關閉');
+        document.getElementById('registerForm').style.display = 'block';
+        document.getElementById('chatArea').style.display = 'none';
+      };
+    };
+
+    document.getElementById('sendBtn').onclick = function() {
+      const input = document.getElementById('msgInput');
+      if (input.value.trim() === '') return;
+      ws.send(JSON.stringify({ type: 'message', text: input.value }));
+      input.value = '';
+    };
+  </script>
 </body>
 </html>
