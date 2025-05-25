@@ -7,6 +7,9 @@
 <body>
   <h2>蘿蔔頭聊天室</h2>
 
+  <!-- 使用說明區 -->
+  <button onclick="showUsage()">使用方法</button>
+
   <div id="login">
     <input id="server" placeholder="伺服器 IP:PORT"><br>
     <input id="nickname" placeholder="暱稱"><br>
@@ -49,7 +52,7 @@
 
     function connect(callback) {
       const server = document.getElementById('server').value.split(':');
-      socket = new WebSocket(`ws://${server[0]}:${server[1]}`);
+      socket = new WebSocket(`ws://${server[0]}:${server[1]}/ws`);
       socket.onopen = callback;
 
       socket.onmessage = e => {
@@ -84,6 +87,17 @@
         msg: msg
       }));
       document.getElementById('message').value = '';
+    }
+
+    function showUsage() {
+      alert(`【使用方法】
+1. 在「伺服器 IP:PORT」欄位輸入格式為：example.onrender.com:10000（請使用你的伺服器網址與 port）
+2. 輸入你的暱稱與密碼。
+3. 點選「註冊」或「登入」。
+4. 登入成功後，會顯示聊天室介面與使用者清單。
+5. 在下拉選單中選擇聊天對象。
+6. 在輸入框輸入訊息後，點擊「送出」即可發送。
+`);
     }
   </script>
 </body>
