@@ -1,90 +1,90 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>蘿蔔頭聊天室客戶端</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; }
-        #chat, #messageForm { display: none; }
-        #messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-    </style>
+  <meta charset="utf-8">
+  <title>蘿蔔頭聊天室</title>
 </head>
 <body>
-    <h1>蘿蔔頭聊天室</h1>
+  <h2>蘿蔔頭聊天室</h2>
 
-    <div id="registerSection">
-        <label>暱稱：<input type="text" id="nicknameInput"></label><br>
-        <label>伺服器網址（例如 wss://你的域名.onrender.com）：<input type="text" id="serverIPInput"></label><br>
-        <button onclick="register()">註冊並連線</button>
-    </div>
+  <div id="login">
+    <input id="server" placeholder="伺服器 IP:PORT"><br>
+    <input id="nickname" placeholder="暱稱"><br>
+    <input id="password" placeholder="密碼"><br>
+    <button onclick="register()">註冊</button>
+    <button onclick="login()">登入</button>
+  </div>
 
-    <div id="chat">
-        <div id="messages"></div>
-        <form id="messageForm" onsubmit="sendMessage(event)">
-            <input type="text" id="messageInput" placeholder="輸入訊息">
-            <button type="submit">送出</button>
-        </form>
-    </div>
+  <div id="chat" style="display:none">
+    <p>目前用戶：<span id="current_user"></span></p>
+    <select id="target_user"></select><br>
+    <input id="message"><button onclick="send()">送出</button>
+    <pre id="chatbox"></pre>
+  </div>
 
-    <script>
-        let socket;
+  <script>
+    let socket;
+    let nickname;
 
-        window.onload = function () {
-            const nickname = localStorage.getItem("nickname");
-            const serverIP = localStorage.getItem("serverIP");
+    function register() {
+      connect(() => {
+        socket.send(JSON.stringify({
+          action: 'register',
+          nickname: document.getElementById('nickname').value,
+          password: document.getElementById('password').value
+        }));
+      });
+    }
 
-            if (nickname && serverIP) {
-                connectToServer(nickname, serverIP);
-            } else {
-                document.getElementById("registerSection").style.display = "block";
+    function login() {
+      connect(() => {
+        nickname = document.getElementById('nickname').value;
+        socket.send(JSON.stringify({
+          action: 'login',
+          nickname: nickname,
+          password: document.getElementById('password').value
+        }));
+      });
+    }
+
+    function connect(callback) {
+      const server = document.getElementById('server').value.split(':');
+      socket = new WebSocket(`ws://${server[0]}:${server[1]}`);
+      socket.onopen = callback;
+
+      socket.onmessage = e => {
+        let data = JSON.parse(e.data);
+        if (data.status === 'ok') {
+          document.getElementById('login').style.display = 'none';
+          document.getElementById('chat').style.display = 'block';
+          document.getElementById('current_user').innerText = nickname;
+          socket.send(JSON.stringify({ action: 'list' }));
+        } else if (data.status === 'error') {
+          alert(data.msg);
+        } else if (data.users) {
+          let select = document.getElementById('target_user');
+          select.innerHTML = '';
+          data.users.forEach(u => {
+            if (u !== nickname) {
+              select.innerHTML += `<option>${u}</option>`;
             }
-        };
-
-        function register() {
-            const nickname = document.getElementById("nicknameInput").value.trim();
-            const serverIP = document.getElementById("serverIPInput").value.trim();
-
-            if (nickname && serverIP) {
-                localStorage.setItem("nickname", nickname);
-                localStorage.setItem("serverIP", serverIP);
-                connectToServer(nickname, serverIP);
-            } else {
-                alert("請輸入暱稱與伺服器網址");
-            }
+          });
+        } else if (data.msg) {
+          document.getElementById('chatbox').textContent += `[${data.from}]: ${data.msg}\n`;
         }
+      };
+    }
 
-        function connectToServer(nickname, serverIP) {
-            document.getElementById("registerSection").style.display = "none";
-            document.getElementById("chat").style.display = "block";
-            document.getElementById("messageForm").style.display = "block";
-
-            socket = new WebSocket(serverIP);
-
-            socket.onopen = () => {
-                socket.send(JSON.stringify({ type: "login", name: nickname }));
-            };
-
-            socket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const msgBox = document.getElementById("messages");
-                msgBox.innerHTML += `<div><strong>${data.name}：</strong>${data.message}</div>`;
-                msgBox.scrollTop = msgBox.scrollHeight;
-            };
-
-            socket.onerror = (e) => {
-                alert("連線錯誤：" + e.message);
-            };
-        }
-
-        function sendMessage(event) {
-            event.preventDefault();
-            const input = document.getElementById("messageInput");
-            const message = input.value.trim();
-            if (message && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ type: "message", message }));
-                input.value = "";
-            }
-        }
-    </script>
+    function send() {
+      let msg = document.getElementById('message').value;
+      let target = document.getElementById('target_user').value;
+      socket.send(JSON.stringify({
+        action: 'message',
+        to: target,
+        msg: msg
+      }));
+      document.getElementById('message').value = '';
+    }
+  </script>
 </body>
 </html>
