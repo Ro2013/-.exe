@@ -36,7 +36,6 @@
       socket.onopen = callback;
 
       socket.onerror = (err) => {
-        alert("⚠️ WebSocket 錯誤，無法連線");
         console.error("WebSocket error", err);
       };
 
