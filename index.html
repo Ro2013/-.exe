@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>蘿蔔頭聊天室</title>
 </head>
 <body>
@@ -11,115 +11,119 @@
   <button onclick="showUsage()">使用方法</button>
 
   <div id="login">
-    <input id="nickname" placeholder="暱稱"><br>
-    <input id="password" placeholder="密碼" type="password"><br>
+    <input id="nickname" placeholder="暱稱" /><br />
+    <input id="password" placeholder="密碼" type="password" /><br />
     <button onclick="register()">註冊</button>
     <button onclick="login()">登入</button>
   </div>
 
   <div id="chat" style="display:none">
     <p>目前用戶：<span id="current_user"></span></p>
-    <select id="target_user"></select><br>
-    <input id="message"><button onclick="send()">送出</button>
-    <pre id="chatbox"></pre>
+    <select id="target_user"></select><br />
+    <input id="message" />
+    <button onclick="send()">送出</button>
+    <pre id="chatbox" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 5px;"></pre>
   </div>
 
   <script>
     let socket;
     let nickname;
-    let retryInterval = 5000;
-    let retryTimer = null;
-    let pendingAction = null; // 'register' 或 'login'
-    let pendingCallback = null;
-
-    function register() {
-      nickname = document.getElementById('nickname').value;
-      pendingAction = 'register';
-      connect(() => {
-        socket.send(JSON.stringify({
-          action: 'register',
-          nickname: nickname,
-          password: document.getElementById('password').value
-        }));
-      });
-    }
-
-    function login() {
-      nickname = document.getElementById('nickname').value;
-      pendingAction = 'login';
-      connect(() => {
-        socket.send(JSON.stringify({
-          action: 'login',
-          nickname: nickname,
-          password: document.getElementById('password').value
-        }));
-      });
-    }
 
     function connect(callback) {
-      if (socket && socket.readyState <= 1) {
-        console.log("🔄 已有連線或正在連線中，略過");
-        return;
-      }
+      let wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      socket = new WebSocket(`${wsProtocol}//${location.host}/ws`);
 
-      console.log("🔌 嘗試連線中...");
-      socket = new WebSocket("wss://luo-bo-tou-liao-tian-shi-si-fu-qi.onrender.com/ws");
+      socket.onopen = callback;
 
-      socket.onopen = () => {
-        console.log("✅ WebSocket 已連線");
-        clearInterval(retryTimer);
-        retryTimer = null;
-        if (callback) callback();
-      };
-
-      socket.onerror = (e) => {
-        console.warn("❌ WebSocket 錯誤，將自動重試...", e);
+      socket.onerror = (err) => {
+        alert("⚠️ WebSocket 錯誤，無法連線");
+        console.error("WebSocket error", err);
       };
 
       socket.onclose = () => {
-        console.warn("🔌 連線中斷，將於 5 秒後重試...");
-        if (!retryTimer) {
-          retryTimer = setInterval(() => {
-            if (pendingAction === 'register') {
-              register();
-            } else if (pendingAction === 'login') {
-              login();
-            }
-          }, retryInterval);
-        }
+        console.log("WebSocket 關閉，3秒後重試");
+        setTimeout(() => connect(callback), 3000);
       };
 
-      socket.onmessage = e => {
+      socket.onmessage = (e) => {
         let data = JSON.parse(e.data);
+        console.log("收到訊息", data);
+
         if (data.status === 'ok') {
           document.getElementById('login').style.display = 'none';
           document.getElementById('chat').style.display = 'block';
           document.getElementById('current_user').innerText = nickname;
           socket.send(JSON.stringify({ action: 'list' }));
         } else if (data.status === 'error') {
-          alert("❗ 錯誤：" + data.msg);
+          alert(data.msg);
         } else if (data.users) {
           let select = document.getElementById('target_user');
           select.innerHTML = '';
-          data.users.forEach(u => {
+          data.users.forEach((u) => {
             if (u !== nickname) {
               select.innerHTML += `<option>${u}</option>`;
             }
           });
         } else if (data.msg) {
           document.getElementById('chatbox').textContent += `[${data.from}]: ${data.msg}\n`;
+          // 自動滾動到最新訊息
+          let chatbox = document.getElementById('chatbox');
+          chatbox.scrollTop = chatbox.scrollHeight;
         }
       };
+    }
+
+    function register() {
+      if (!document.getElementById('nickname').value || !document.getElementById('password').value) {
+        alert("暱稱和密碼不能空白");
+        return;
+      }
+      connect(() => {
+        socket.send(
+          JSON.stringify({
+            action: 'register',
+            nickname: document.getElementById('nickname').value,
+            password: document.getElementById('password').value,
+          })
+        );
+      });
+    }
+
+    function login() {
+      if (!document.getElementById('nickname').value || !document.getElementById('password').value) {
+        alert("暱稱和密碼不能空白");
+        return;
+      }
+      nickname = document.getElementById('nickname').value;
+      connect(() => {
+        socket.send(
+          JSON.stringify({
+            action: 'login',
+            nickname: nickname,
+            password: document.getElementById('password').value,
+          })
+        );
+      });
     }
 
     function send() {
       let msg = document.getElementById('message').value;
       let target = document.getElementById('target_user').value;
-      socket.send(JSON.stringify({
-        action: 'message',
-        to: target,
-        msg: msg
-      }));
+      if (!msg) {
+        alert("請輸入訊息");
+        return;
+      }
+      if (!target) {
+        alert("請選擇聊天對象");
+        return;
+      }
+      socket.send(
+        JSON.stringify({
+          action: 'message',
+          to: target,
+          msg: msg,
+        })
+      );
       document.getElementById('message').value = '';
     }
 
@@ -128,8 +132,7 @@
 1. 輸入你的暱稱與密碼。
 2. 點選「註冊」或「登入」。
 3. 登入成功後，會顯示聊天室介面與使用者清單。
-4. 選擇聊天對象，輸入訊息並點「送出」。
-`);
+4. 選擇聊天對象，輸入訊息並點「送出」。`);
     }
   </script>
 </body>
