@@ -12,7 +12,7 @@
 
   <div id="login">
     <input id="nickname" placeholder="暱稱"><br>
-    <input id="password" placeholder="密碼"><br>
+    <input id="password" placeholder="密碼" type="password"><br>
     <button onclick="register()">註冊</button>
     <button onclick="login()">登入</button>
   </div>
@@ -27,20 +27,27 @@
   <script>
     let socket;
     let nickname;
+    let retryInterval = 5000;
+    let retryTimer = null;
+    let pendingAction = null; // 'register' 或 'login'
+    let pendingCallback = null;
 
     function register() {
+      nickname = document.getElementById('nickname').value;
+      pendingAction = 'register';
       connect(() => {
         socket.send(JSON.stringify({
           action: 'register',
-          nickname: document.getElementById('nickname').value,
+          nickname: nickname,
           password: document.getElementById('password').value
         }));
       });
     }
 
     function login() {
+      nickname = document.getElementById('nickname').value;
+      pendingAction = 'login';
       connect(() => {
-        nickname = document.getElementById('nickname').value;
         socket.send(JSON.stringify({
           action: 'login',
           nickname: nickname,
@@ -50,8 +57,37 @@
     }
 
     function connect(callback) {
+      if (socket && socket.readyState <= 1) {
+        console.log("🔄 已有連線或正在連線中，略過");
+        return;
+      }
+
+      console.log("🔌 嘗試連線中...");
       socket = new WebSocket("wss://luo-bo-tou-liao-tian-shi-si-fu-qi.onrender.com/ws");
-      socket.onopen = callback;
+
+      socket.onopen = () => {
+        console.log("✅ WebSocket 已連線");
+        clearInterval(retryTimer);
+        retryTimer = null;
+        if (callback) callback();
+      };
+
+      socket.onerror = (e) => {
+        console.warn("❌ WebSocket 錯誤，將自動重試...", e);
+      };
+
+      socket.onclose = () => {
+        console.warn("🔌 連線中斷，將於 5 秒後重試...");
+        if (!retryTimer) {
+          retryTimer = setInterval(() => {
+            if (pendingAction === 'register') {
+              register();
+            } else if (pendingAction === 'login') {
+              login();
+            }
+          }, retryInterval);
+        }
+      };
 
       socket.onmessage = e => {
         let data = JSON.parse(e.data);
@@ -61,7 +97,7 @@
           document.getElementById('current_user').innerText = nickname;
           socket.send(JSON.stringify({ action: 'list' }));
         } else if (data.status === 'error') {
-          alert(data.msg);
+          alert("❗ 錯誤：" + data.msg);
         } else if (data.users) {
           let select = document.getElementById('target_user');
           select.innerHTML = '';
