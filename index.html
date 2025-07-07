@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>蘿蔔頭聊天室</title>
+  <title>蘿蔔頭</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,15 +11,42 @@
   <div id="login">
     <input id="email" placeholder="Email">
     <input id="password" placeholder="密碼" type="password">
+    <input id="line_id" placeholder="設定你的 Line ID">
     <button onclick="signUp()">註冊</button>
     <button onclick="signIn()">登入</button>
   </div>
 
-  <div id="chat" style="display:none;">
-    <h2>聊天室</h2>
-    <div id="messages"></div>
-    <input id="newMessage" placeholder="輸入訊息">
-    <button onclick="sendMessage()">送出</button>
+  <div id="chat" style="display:none">
+    <h2>好友 & 群組</h2>
+
+    <div>
+      <input id="searchId" placeholder="輸入要加的 Line ID">
+      <button onclick="addFriend()">加好友</button>
+    </div>
+
+    <div>
+      <h3>好友列表</h3>
+      <ul id="friendList"></ul>
+    </div>
+
+    <div>
+      <input id="groupName" placeholder="群組名稱">
+      <button onclick="createGroup()">建立群組</button>
+    </div>
+
+    <div>
+      <h3>群組列表</h3>
+      <ul id="groupList"></ul>
+    </div>
+
+    <div>
+      <h3>聊天室</h3>
+      <div id="messages" style="height:200px;overflow-y:scroll;border:1px solid #ccc;"></div>
+      <input id="newMessage" placeholder="輸入訊息">
+      <button onclick="sendMessage()">送出</button>
+    </div>
+
+    <button onclick="signOut()">登出</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
