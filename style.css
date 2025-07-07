@@ -1,28 +1,34 @@
 body {
   font-family: sans-serif;
-  background: #eef;
+  background: #f0f0ff;
   padding: 20px;
 }
 
-#chat, #login {
-  margin-top: 20px;
-}
-
-#messages {
-  height: 300px;
-  overflow-y: scroll;
-  background: #fff;
-  padding: 10px;
-  border: 1px solid #aaa;
-  margin-bottom: 10px;
-}
-
-input {
-  padding: 8px;
-  font-size: 14px;
+input, button {
+  padding: 6px;
+  margin: 5px;
 }
 
 button {
-  padding: 8px 14px;
-  margin-left: 5px;
+  cursor: pointer;
+}
+
+#messages {
+  background: #fff;
+  padding: 10px;
+  margin-top: 10px;
+  height: 200px;
+  overflow-y: scroll;
+  border: 1px solid #ccc;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+li {
+  margin: 3px 0;
+  cursor: pointer;
+  color: blue;
 }
