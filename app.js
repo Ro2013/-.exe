@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://你的專案.supabase.co';
-const SUPABASE_KEY = '你的公開 anon key';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpZXBzdmhwc2R6ZGd6ZGh1dnRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4NzU5MDUsImV4cCI6MjA2NzQ1MTkwNX0.G7O_cl099wt02_SnNRZ2iqa39zFqEtma9wL09t6vFoM';
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
