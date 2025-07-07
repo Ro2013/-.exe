@@ -3,15 +3,15 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
-let currentMode = null; // 'friend' or 'group'
-let currentTarget = null; // email or group_id
+let currentMode = null;
+let currentTarget = null;
 
 async function signUp() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
   const line_id = document.getElementById("line_id").value;
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({ email, password });
   if (error) return alert(error.message);
 
   await supabase.from("users").insert({ email, line_id });
@@ -57,8 +57,14 @@ async function loadFriends() {
   ul.innerHTML = "";
 
   for (const f of data) {
+    const { data: friendInfo } = await supabase
+      .from("users")
+      .select("line_id")
+      .eq("email", f.friend_email)
+      .single();
+
     const li = document.createElement("li");
-    li.innerText = f.friend_email;
+    li.innerText = friendInfo?.line_id || f.friend_email;
     li.onclick = () => {
       currentMode = "friend";
       currentTarget = f.friend_email;
@@ -117,8 +123,14 @@ async function loadMessages() {
       .order("created_at");
 
     for (const msg of data.filter(m => (m.sender === currentUser.email && m.receiver === currentTarget) || (m.receiver === currentUser.email && m.sender === currentTarget))) {
+      const { data: userInfo } = await supabase
+        .from("users")
+        .select("line_id")
+        .eq("email", msg.sender)
+        .single();
+
       const p = document.createElement("p");
-      p.textContent = `${msg.sender}: ${msg.text}`;
+      p.textContent = `${userInfo?.line_id || msg.sender}: ${msg.text}`;
       box.appendChild(p);
     }
   } else if (currentMode === "group") {
@@ -128,11 +140,18 @@ async function loadMessages() {
       .order("created_at");
 
     for (const msg of data) {
+      const { data: userInfo } = await supabase
+        .from("users")
+        .select("line_id")
+        .eq("email", msg.sender)
+        .single();
+
       const p = document.createElement("p");
-      p.textContent = `${msg.sender}: ${msg.text}`;
+      p.textContent = `${userInfo?.line_id || msg.sender}: ${msg.text}`;
       box.appendChild(p);
     }
   }
+
   box.scrollTop = box.scrollHeight;
 }
 
