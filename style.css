@@ -1,0 +1,28 @@
+body {
+  font-family: sans-serif;
+  background: #eef;
+  padding: 20px;
+}
+
+#chat, #login {
+  margin-top: 20px;
+}
+
+#messages {
+  height: 300px;
+  overflow-y: scroll;
+  background: #fff;
+  padding: 10px;
+  border: 1px solid #aaa;
+  margin-bottom: 10px;
+}
+
+input {
+  padding: 8px;
+  font-size: 14px;
+}
+
+button {
+  padding: 8px 14px;
+  margin-left: 5px;
+}
