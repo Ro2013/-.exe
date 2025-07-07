@@ -1,138 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
   <title>蘿蔔頭聊天室</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>蘿蔔頭聊天室（目前正在維修中註冊和登入功能不能使用，敬請見諒。）</h2>
-
-  <!-- 使用說明按鈕 -->
-  <button onclick="showUsage()">使用方法</button>
+  <h1>蘿蔔頭聊天室</h1>
 
   <div id="login">
-    <input id="nickname" placeholder="暱稱" /><br />
-    <input id="password" placeholder="密碼" type="password" /><br />
-    <button onclick="register()">註冊</button>
-    <button onclick="login()">登入</button>
+    <input id="email" placeholder="Email">
+    <input id="password" placeholder="密碼" type="password">
+    <button onclick="signUp()">註冊</button>
+    <button onclick="signIn()">登入</button>
   </div>
 
-  <div id="chat" style="display:none">
-    <p>目前用戶：<span id="current_user"></span></p>
-    <select id="target_user"></select><br />
-    <input id="message" />
-    <button onclick="send()">送出</button>
-    <pre id="chatbox" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 5px;"></pre>
+  <div id="chat" style="display:none;">
+    <h2>聊天室</h2>
+    <div id="messages"></div>
+    <input id="newMessage" placeholder="輸入訊息">
+    <button onclick="sendMessage()">送出</button>
   </div>
 
-  <script>
-    let socket;
-    let nickname;
-
-    function connect(callback) {
-      let wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      socket = new WebSocket(`${wsProtocol}//${location.host}/ws`);
-
-      socket.onopen = callback;
-
-      socket.onerror = (err) => {
-        console.error("WebSocket error", err);
-      };
-
-      socket.onclose = () => {
-        console.log("WebSocket 關閉，3秒後重試");
-        setTimeout(() => connect(callback), 3000);
-      };
-
-      socket.onmessage = (e) => {
-        let data = JSON.parse(e.data);
-        console.log("收到訊息", data);
-
-        if (data.status === 'ok') {
-          document.getElementById('login').style.display = 'none';
-          document.getElementById('chat').style.display = 'block';
-          document.getElementById('current_user').innerText = nickname;
-          socket.send(JSON.stringify({ action: 'list' }));
-        } else if (data.status === 'error') {
-          alert(data.msg);
-        } else if (data.users) {
-          let select = document.getElementById('target_user');
-          select.innerHTML = '';
-          data.users.forEach((u) => {
-            if (u !== nickname) {
-              select.innerHTML += `<option>${u}</option>`;
-            }
-          });
-        } else if (data.msg) {
-          document.getElementById('chatbox').textContent += `[${data.from}]: ${data.msg}\n`;
-          // 自動滾動到最新訊息
-          let chatbox = document.getElementById('chatbox');
-          chatbox.scrollTop = chatbox.scrollHeight;
-        }
-      };
-    }
-
-    function register() {
-      if (!document.getElementById('nickname').value || !document.getElementById('password').value) {
-        alert("暱稱和密碼不能空白");
-        return;
-      }
-      connect(() => {
-        socket.send(
-          JSON.stringify({
-            action: 'register',
-            nickname: document.getElementById('nickname').value,
-            password: document.getElementById('password').value,
-          })
-        );
-      });
-    }
-
-    function login() {
-      if (!document.getElementById('nickname').value || !document.getElementById('password').value) {
-        alert("暱稱和密碼不能空白");
-        return;
-      }
-      nickname = document.getElementById('nickname').value;
-      connect(() => {
-        socket.send(
-          JSON.stringify({
-            action: 'login',
-            nickname: nickname,
-            password: document.getElementById('password').value,
-          })
-        );
-      });
-    }
-
-    function send() {
-      let msg = document.getElementById('message').value;
-      let target = document.getElementById('target_user').value;
-      if (!msg) {
-        alert("請輸入訊息");
-        return;
-      }
-      if (!target) {
-        alert("請選擇聊天對象");
-        return;
-      }
-      socket.send(
-        JSON.stringify({
-          action: 'message',
-          to: target,
-          msg: msg,
-        })
-      );
-      document.getElementById('message').value = '';
-    }
-
-    function showUsage() {
-      alert(`【使用方法】
-1. 輸入你的暱稱與密碼。
-2. 點選「註冊」或「登入」。
-3. 登入成功後，會顯示聊天室介面與使用者清單。
-4. 選擇聊天對象，輸入訊息並點「送出」。`);
-    }
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
